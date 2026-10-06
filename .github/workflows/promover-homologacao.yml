@@ -1,0 +1,38 @@
+name: Promover homologação APX Canais
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  promover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Promover homologação
+        run: python promover_homologacao.py
+
+      - name: Publicar playlist oficial
+        run: |
+          if git diff --quiet -- plutotv_brasil_v2_categorizada.m3u; then
+            echo "Nenhuma alteração na playlist oficial."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add plutotv_brasil_v2_categorizada.m3u
+          git commit -m "Promove homologação para produção"
+          git push
