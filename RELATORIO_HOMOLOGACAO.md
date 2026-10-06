@@ -4,19 +4,21 @@
 
 - Produção preservada: **93 canais**
 - Entradas coletadas: **399**
-- Duplicados removidos: **39**
-- Excluídos pela curadoria: **58**
-- Novos canais aprovados tecnicamente para homologação: **129**
-- Canais temáticos enviados para revisão manual: **8**
-- Links que falharam no teste: **165**
+- Duplicados removidos: **65**
+- Excluídos pela curadoria: **117**
+- Religiosos bloqueados: **21**
+- Novos canais aprovados tecnicamente para homologação: **83**
+- Canais enviados para revisão manual: **2**
+- Links que falharam no teste: **132**
 
 ## Regras atuais
 - A lista oficial atual é preservada integralmente.
 - São consultadas apenas fontes brasileiras/gratuitas nesta etapa.
 - Prioridade para conteúdo em português/PT-BR.
-- Excluídos: agronegócio, futebol, esportes em geral, lutas, automobilismo de carros, religiosos, políticos/partidários, shopping, rádio, cultura/arte e anime.
+- RELIGIOSO: bloqueio absoluto para novos canais.
+- Excluídos: agronegócio, futebol, esportes em geral, lutas, automobilismo de carros, política/legislativo, shopping, rádio, cultura/arte, anime e canais muito regionais.
 - Esporte permitido somente quando claramente ligado a moto, motocross ou bike.
-- Canais 24/7 não são excluídos automaticamente; os temáticos ficam na lista REVISAR.
+- Canais 24/7 não são excluídos só por serem 24/7; conteúdo vem antes.
 - A automação não promove novos canais diretamente para a produção.
 
 ## Observação sobre idioma
