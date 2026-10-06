@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import concurrent.futures
+import ipaddress
 import re
 import urllib.request
 from pathlib import Path
@@ -17,17 +18,23 @@ SOURCES = [
 
 TIMEOUT = 8
 MAX_WORKERS = 20
-USER_AGENT = "APX-Canais-Homologacao/3.0"
+USER_AGENT = "APX-Canais-Homologacao/3.1"
 
 TVG_ID_RE = re.compile(r'tvg-id="([^"]*)"')
 GROUP_RE = re.compile(r'group-title="([^"]*)"')
 
+MOTO_BIKE_TERMS = [
+    "motocross", "supercross", "enduro", "trial", "motorcycle",
+    "mountain bike", "mtb", "downhill", "bmx", "bike", "ciclismo", "cycling",
+]
+
 BLOCK_TERMS = [
     "agro", "agricultura", "pecuaria", "pecuária", "canal do boi", "rural", "terra viva",
 
-    "futebol", "football", "soccer", "premiere", "sportv", "espn", "bandsports",
-    "basket", "basquete", "volei", "vôlei", "tenis", "tênis", "golf", "poker",
-    "world poker tour", "fifa+", "fifa plus", "ge fast", "n sports", "nsports",
+    "sport", "sports", "futebol", "football", "soccer", "premiere", "sportv",
+    "espn", "bandsports", "basket", "basquete", "volei", "vôlei", "tenis", "tênis",
+    "golf", "poker", "world poker tour", "fifa+", "fifa plus", "ge fast",
+    "n sports", "nsports", "fish tv", "woohoo",
 
     "mma", "ufc", "boxe", "boxing", "wrestling", "kickboxing", "combate",
 
@@ -38,30 +45,32 @@ BLOCK_TERMS = [
     "biblia", "bíblia", "crist", "jesus", "god tv", "tbn", "canção nova",
     "cancao nova", "rede vida", "pai eterno", "novo tempo", "aparecida",
     "shalom", "rcc", "adventista", "batista", "assembleia de deus",
+    "boas novas", "istv",
 
     "partido", "parlamento", "senado", "legislative", "legislativo",
     "assembleia legislativa", "camara legislativa", "câmara legislativa",
     "tv camara", "tv câmara", "tv justiça", "tv justica",
 
-    "shopping", "shop", "telemarket", "televendas", "vendas",
+    "shopping", "shop", "telemarket", "televendas", "vendas", "radio", "rádio",
 
-    "radio", "rádio",
-
-    "cultura", "arte 1", "curta!", "museum", "museu", "classique",
+    "culture", "cultura", "arte 1", "curta!", "museum", "museu", "classique",
 
     "anime", "boruto", "naruto", "one piece",
 
     "intervention", "british screen classics", "cbs news 24/7", "cnn headlines",
     "gloob", "discovery kids", "disney junior", "hgtv", "gnt",
+
+    "tv paraense", "grande natal", "tv zoom", "o dia tv", "canal 38",
+    "j3news", "tcm 10", "tv a folha", "amazon sat", "sic tv", "tv a critica",
+    "tv a crítica", "tv difusao", "tv difusão", "tv futuro", "unisul", "stz tv",
+    "tv metropole", "tv metrópole", "tv parana turismo", "tv paraná turismo",
+    "tv guara", "tv guará", "tv pantanal", "nova era tv",
 ]
 
-MOTO_BIKE_TERMS = [
-    "motocross", "supercross", "enduro", "trial", "motorcycle",
-    "mountain bike", "mtb", "downhill", "bmx", "bike", "ciclismo", "cycling",
-]
-
-REVIEW_TERMS = [
-    "24/7", "24h", "24 h", "by a&e", "catfish", "storage wars",
+PAY_TV_TERMS = [
+    "a&e latin america", "adult swim latin america", "lifetime latin america",
+    "amc latin america", "axn", "sony movies", "sony channel",
+    "studio universal", "tnt novelas", "nickelodeon",
 ]
 
 REGIONAL_TERMS = [
@@ -73,9 +82,7 @@ REGIONAL_TERMS = [
     "sul bahia", "bahia", "paraná", "parana", "pantanal ms",
     "rio de janeiro", "tv aldeia", "araruna", "marajoara",
     "tv fronteira", "tv vila real", "tv clube", "rede meio norte",
-    "rede minas", "tve rs", "tve bahia", "tv ufop", "tv parana turismo",
-    "tv guara", "tv guará", "tv metropole", "tv metrópole",
-    "tv pantanal", "tvvideo news", "tvideonews", "nova era tv",
+    "rede minas", "tve rs", "tve bahia", "tv ufop",
     "sbt interior", "rbatv", "rede sptv", "tv alianca catarinense",
     "tv alternativa", "tv litoral rn", "tv itape", "tvitape",
     "tv sim cachoeiro", "tv sim sao mateus", "tv sim são mateus",
@@ -83,24 +90,31 @@ REGIONAL_TERMS = [
 ]
 
 REGIONAL_ALLOW = [
-    "amazon sat", "canal uol", "record news", "sbt news", "rede tv!",
-    "rede tv", "tv brasil", "sony channel", "sony movies",
-    "amc latin america", "a&e latin america", "lifetime latin america",
-    "adult swim latin america", "smithsonian channel", "red bull tv",
-    "woohoo", "travel box brazil", "music box brazil", "mtv ",
-    "nickelodeon",
+    "canal uol", "record news", "sbt news", "rede tv!", "rede tv",
+    "tv brasil", "smithsonian channel", "red bull tv", "travel box brazil",
+    "music box brazil", "mtv ",
 ]
+
+REVIEW_TERMS = [
+    "24/7", "24h", "24 h", "by a&e", "storage wars",
+]
+
+APPROVED_EXPLICIT = ["mtv catfish"]
 
 RELIGIOUS_TERMS = [
     "relig", "gospel", "igreja", "church", "evangel", "catolic", "católic",
     "biblia", "bíblia", "crist", "jesus", "god tv", "tbn", "canção nova",
     "cancao nova", "rede vida", "pai eterno", "novo tempo", "aparecida",
     "shalom", "rcc", "adventista", "batista", "assembleia de deus",
+    "boas novas", "istv",
 ]
 
 
 def fetch(url, limit=None):
-    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, "Accept": "*/*"})
+    req = urllib.request.Request(
+        url,
+        headers={"User-Agent": USER_AGENT, "Accept": "*/*"},
+    )
     with urllib.request.urlopen(req, timeout=TIMEOUT) as response:
         return response.read(limit) if limit else response.read()
 
@@ -122,6 +136,11 @@ def clean_name(name):
     text = norm(text)
     text = re.sub(r"[^a-z0-9]+", " ", text)
     return " ".join(text.split())
+
+
+def contains_any(haystack, terms):
+    normalized = norm(haystack)
+    return any(norm(term) in normalized for term in terms)
 
 
 def parse_m3u(text, source):
@@ -167,9 +186,7 @@ def parse_m3u(text, source):
 
 
 def production_keys(text):
-    ids = set()
-    names = set()
-    urls = set()
+    ids, names, urls = set(), set(), set()
 
     for entry in parse_m3u(text, "produção"):
         if entry["tvg_id"]:
@@ -181,19 +198,33 @@ def production_keys(text):
     return ids, names, urls
 
 
-def contains_any(haystack, terms):
-    normalized = norm(haystack)
-    return any(norm(term) in normalized for term in terms)
+def is_raw_ip_host(url):
+    host = (urlparse(url).hostname or "").strip()
+
+    if not host:
+        return False
+
+    try:
+        ipaddress.ip_address(host)
+        return True
+    except ValueError:
+        return False
 
 
 def classify(entry):
     hay = f'{entry["name"]} {entry["group"]} {entry["extinf"]}'
+
+    if contains_any(hay, APPROVED_EXPLICIT):
+        return "keep", "aprovado explicitamente"
 
     if contains_any(hay, MOTO_BIKE_TERMS):
         return "keep", "moto/bike permitido"
 
     if contains_any(hay, BLOCK_TERMS):
         return "block", "excluído pela curadoria"
+
+    if contains_any(hay, PAY_TV_TERMS):
+        return "block", "marca de TV por assinatura/retransmissão"
 
     if "[geo-blocked]" in hay.lower():
         return "block", "geo-blocked"
@@ -203,6 +234,9 @@ def classify(entry):
 
     if regional and not regional_allowed:
         return "block", "canal regional/local"
+
+    if is_raw_ip_host(entry["url"]):
+        return "review", "origem por IP direto — revisar legitimidade"
 
     if contains_any(hay, REVIEW_TERMS):
         return "review", "temático para revisão manual"
@@ -239,6 +273,7 @@ def retag(extinf, prefix):
         return GROUP_RE.sub(f'group-title="{new_group}"', extinf)
 
     comma = extinf.rfind(",")
+
     if comma >= 0:
         return extinf[:comma] + f' group-title="{new_group}"' + extinf[comma:]
 
@@ -270,17 +305,19 @@ def main():
     source_counts = {}
     fetch_errors = []
 
-    for name, url in SOURCES:
+    for source_name, url in SOURCES:
         try:
             parsed = parse_m3u(
                 fetch(url).decode("utf-8", errors="replace"),
-                name,
+                source_name,
             )
             candidates.extend(parsed)
-            source_counts[name] = len(parsed)
+            source_counts[source_name] = len(parsed)
         except Exception as exc:
-            source_counts[name] = 0
-            fetch_errors.append(f"{name}: {type(exc).__name__}: {exc}")
+            source_counts[source_name] = 0
+            fetch_errors.append(
+                f"{source_name}: {type(exc).__name__}: {exc}"
+            )
 
     seen_ids = set(prod_ids)
     seen_names = set(prod_names)
@@ -306,10 +343,11 @@ def main():
 
         if tvg_id:
             seen_ids.add(tvg_id)
+
         if name_key:
             seen_names.add(name_key)
-        seen_urls.add(url_key)
 
+        seen_urls.add(url_key)
         unique.append(entry)
 
     keep_raw = []
@@ -331,7 +369,10 @@ def main():
         bad = []
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:
-            futures = {pool.submit(validate_hls, entry): entry for entry in items}
+            futures = {
+                pool.submit(validate_hls, entry): entry
+                for entry in items
+            }
 
             for future in concurrent.futures.as_completed(futures):
                 entry = futures[future]
@@ -353,7 +394,8 @@ def main():
     prod_count = len(parse_m3u(production, "produção"))
 
     blocked_religious = sum(
-        1 for entry, _ in blocked
+        1
+        for entry, _ in blocked
         if contains_any(
             f'{entry["name"]} {entry["group"]} {entry["extinf"]}',
             RELIGIOUS_TERMS,
@@ -376,28 +418,35 @@ def main():
         "",
         "## Regras atuais",
         "- A lista oficial atual é preservada integralmente.",
-        "- São consultadas apenas fontes brasileiras/gratuitas nesta etapa.",
         "- Prioridade para conteúdo em português/PT-BR.",
         "- RELIGIOSO: bloqueio absoluto para novos canais.",
-        "- Excluídos: agronegócio, futebol, esportes em geral, lutas, automobilismo de carros, política/legislativo, shopping, rádio, cultura/arte, anime e canais muito regionais.",
-        "- Esporte permitido somente quando claramente ligado a moto, motocross ou bike.",
-        "- Canais 24/7 não são excluídos só por serem 24/7; conteúdo vem antes.",
+        "- Excluídos: agronegócio, futebol/esportes fora de moto-bike, lutas, automobilismo de carros, política/legislativo, shopping, rádio, cultura/arte, anime e canais muito regionais.",
+        "- Marcas de TV por assinatura não entram automaticamente.",
+        "- Links por IP direto ficam em revisão, não em aprovação automática.",
         "- A automação não promove novos canais diretamente para a produção.",
         "",
+        "## Observação de origem",
+        "As fontes agregam links publicamente acessíveis, mas isso não é garantia independente de licenciamento de cada retransmissão. Por isso a homologação é conservadora e não promove automaticamente marcas pagas ou links diretos por IP.",
+        "",
         "## Observação sobre idioma",
-        "A fonte brasileira aumenta a chance de áudio em português, mas a M3U sozinha não garante dublagem/PT-BR. Canais duvidosos devem ser testados antes da promoção.",
+        "A fonte brasileira aumenta a chance de áudio em português, mas a M3U sozinha não garante dublagem/PT-BR.",
         "",
         "## Fontes",
     ]
 
-    for name, _ in SOURCES:
-        report.append(f"- {name}: {source_counts.get(name, 0)} entradas")
+    for source_name, _ in SOURCES:
+        report.append(
+            f"- {source_name}: {source_counts.get(source_name, 0)} entradas"
+        )
 
     if fetch_errors:
         report += ["", "## Falhas de fonte"]
         report += [f"- {item}" for item in fetch_errors]
 
-    REPORT.write_text("\n".join(report) + "\n", encoding="utf-8")
+    REPORT.write_text(
+        "\n".join(report) + "\n",
+        encoding="utf-8",
+    )
 
     print(f"Produção preservada: {prod_count}")
     print(f"Homologação: {len(keep)}")
