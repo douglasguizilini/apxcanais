@@ -1,0 +1,39 @@
+name: Atualizar homologação APX Canais
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "43 */12 * * *"
+
+permissions:
+  contents: write
+
+jobs:
+  homologar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Gerar homologação
+        run: python update_homologacao.py
+
+      - name: Publicar homologação
+        run: |
+          if git diff --quiet -- apxcanais_homologacao.m3u apxcanais_revisar.m3u RELATORIO_HOMOLOGACAO.md; then
+            echo "Nenhuma alteração na homologação."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apxcanais_homologacao.m3u apxcanais_revisar.m3u RELATORIO_HOMOLOGACAO.md
+          git commit -m "Atualiza homologação APX Canais"
+          git push
