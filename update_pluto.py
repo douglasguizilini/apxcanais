@@ -26,6 +26,22 @@ def read_url(url: str) -> str:
         return response.read().decode("utf-8")
 
 
+def normalize_pluto_url(url: str) -> str:
+    """
+    Adiciona o parâmetro de eventos estendidos ao manifesto HLS,
+    preservando a URL assinada e os parâmetros que já existem.
+    """
+    if re.search(
+        r"(?:[?&])includeExtendedEvents=",
+        url,
+        flags=re.IGNORECASE,
+    ):
+        return url
+
+    separator = "&" if "?" in url else "?"
+    return f"{url}{separator}includeExtendedEvents=true"
+
+
 def parse_streams(text: str) -> dict[str, str]:
     streams = {}
     current_id = None
@@ -38,7 +54,7 @@ def parse_streams(text: str) -> dict[str, str]:
             current_id = match.group(1).strip() if match else None
 
         elif current_id and line.startswith(("http://", "https://")):
-            streams[current_id] = line
+            streams[current_id] = normalize_pluto_url(line)
             current_id = None
 
     return streams
@@ -154,7 +170,10 @@ def main() -> int:
         return 0
 
     TARGET.write_text(updated, encoding="utf-8")
-    print("Playlist atualizada com URLs completas da fonte.")
+    print(
+        "Playlist atualizada com URLs completas da fonte "
+        "e includeExtendedEvents=true."
+    )
     return 0
 
 
