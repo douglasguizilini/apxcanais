@@ -3,13 +3,13 @@
 **A playlist oficial não é alterada por esta automação.**
 
 - Produção preservada: **74 canais**
-- Entradas coletadas: **409**
+- Entradas coletadas: **413**
 - Duplicados removidos: **58**
 - Excluídos pela curadoria: **159**
 - Religiosos bloqueados: **26**
-- Novos canais aprovados tecnicamente para homologação: **87**
-- Canais enviados para revisão manual: **19**
-- Links que falharam no teste: **86**
+- Novos canais aprovados tecnicamente para homologação: **90**
+- Canais enviados para revisão manual: **21**
+- Links que falharam no teste: **85**
 
 ## Regras atuais
 - A lista oficial atual é preservada integralmente.
@@ -27,5 +27,5 @@ As fontes agregam links publicamente acessíveis, mas isso não é garantia inde
 A fonte brasileira aumenta a chance de áudio em português, mas a M3U sozinha não garante dublagem/PT-BR.
 
 ## Fontes
-- iptv-org Brasil: 398 entradas
+- iptv-org Brasil: 402 entradas
 - Free-TV Brasil: 11 entradas
