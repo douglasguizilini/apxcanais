@@ -8,8 +8,8 @@
 - Excluídos pela curadoria: **158**
 - Religiosos bloqueados: **27**
 - Novos canais aprovados tecnicamente para homologação: **85**
-- Canais enviados para revisão manual: **18**
-- Links que falharam no teste: **92**
+- Canais enviados para revisão manual: **19**
+- Links que falharam no teste: **91**
 
 ## Regras atuais
 - A lista oficial atual é preservada integralmente.
