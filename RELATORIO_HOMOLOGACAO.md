@@ -5,11 +5,11 @@
 - Produção preservada: **74 canais**
 - Entradas coletadas: **412**
 - Duplicados removidos: **58**
-- Excluídos pela curadoria: **159**
-- Religiosos bloqueados: **28**
-- Novos canais aprovados tecnicamente para homologação: **87**
+- Excluídos pela curadoria: **157**
+- Religiosos bloqueados: **27**
+- Novos canais aprovados tecnicamente para homologação: **90**
 - Canais enviados para revisão manual: **14**
-- Links que falharam no teste: **94**
+- Links que falharam no teste: **93**
 
 ## Regras atuais
 - A lista oficial atual é preservada integralmente.
